@@ -451,7 +451,7 @@ button.ai-btn:hover:not(:disabled) { background: #e2c0ff; }
         <div class="explain">
           <b>수학 봇</b>은 <b>37% 규칙</b>을 씁니다: 처음 <code>N/e ≈ 11</code>번의 호가는 관찰만 하고, 그 다음부터는 본 적 없는 새 최고가가 나오면 즉시 매도. Dynkin·Lindley가 이게 최적임을 증명했고, 이 정책의 최대값 적중률이 정확히 <code>1/e ≈ 37%</code>예요.<br><br>
           <b>AI 봇</b>은 강화학습(Q-learning)으로 룰을 모른 채 시작합니다. 무작위 시도 → 보상 → 가치 함수 업데이트를 반복하면서, <b>수렴된 정책이 37% 규칙과 동일한 모양</b>으로 형성돼요.<br><br>
-          이건 우연이 아니에요. 강화학습의 수학적 뿌리가 <code>Bellman 방정식</code>이고, optimal stopping은 그 방정식의 해의 가장 기본적인 형태입니다. <b>수학이 1초에 증명한 답을 AI가 2000판 학습해서 도달하는 거예요.</b> ChatGPT, 자율주행, 알고리즘 트레이딩의 RL이 모두 같은 수학 기반에서 작동합니다.
+          이건 우연이 아니에요. 강화학습의 수학적 뿌리가 <code>Bellman 방정식</code>이고, optimal stopping은 그 방정식의 해의 가장 기본적인 형태입니다. <b>수학이 미리 증명해둔 정답을 AI가 2000판 학습으로 발견하는 거예요.</b> ChatGPT, 자율주행, 알고리즘 트레이딩의 RL이 모두 같은 수학 기반에서 작동합니다.
         </div>
       </div>
 
@@ -492,11 +492,13 @@ function gauss() {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
-// i.i.d. 오퍼: N(mean, std) 정규분포
+// 상승장 + 약한 i.i.d. 노이즈: N(mean + drift*i, std)
+// drift 0.5: 30일간 평균 +15 상승. 37% 규칙이 명확히 우세, 일찍 매도하면 큰 손해
+const OFFER_DRIFT = 0.5;
 function generateOffers() {
   const arr = [];
   for (let i = 0; i < N; i++) {
-    const v = OFFER_MEAN + OFFER_STD * gauss();
+    const v = OFFER_MEAN + OFFER_DRIFT * i + OFFER_STD * gauss();
     arr.push(Math.max(40, v));
   }
   return arr;
@@ -953,29 +955,29 @@ function drawLearnChart() {
   const minY = 60, maxY = 100;
   const yScale = (v) => padT + plotH - plotH * ((v - minY) / (maxY - minY));
 
-  // 수학 봇 89.4점 기준선
+  // 수학 봇 92.9점 기준선 (상승장 drift=0.5에서 37% 규칙의 기대 점수)
   ctx.strokeStyle = 'rgba(88, 166, 255, 0.7)';
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
-  ctx.moveTo(padL, yScale(89.4));
-  ctx.lineTo(W - padR, yScale(89.4));
+  ctx.moveTo(padL, yScale(92.9));
+  ctx.lineTo(W - padR, yScale(92.9));
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = '#58a6ff';
   ctx.font = '10px "IBM Plex Mono", monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('수학 봇 89.4', padL + 4, yScale(89.4) - 4);
+  ctx.fillText('수학 봇 92.9', padL + 4, yScale(92.9) - 4);
 
-  // 76.8 (무작위) 기준선
+  // 77.1 (무작위) 기준선
   ctx.strokeStyle = 'rgba(139, 148, 158, 0.5)';
   ctx.setLineDash([2, 4]);
   ctx.beginPath();
-  ctx.moveTo(padL, yScale(76.8));
-  ctx.lineTo(W - padR, yScale(76.8));
+  ctx.moveTo(padL, yScale(77.1));
+  ctx.lineTo(W - padR, yScale(77.1));
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = '#8b949e';
-  ctx.fillText('무작위 76.8', padL + 4, yScale(76.8) + 12);
+  ctx.fillText('무작위 77.1', padL + 4, yScale(77.1) + 12);
 
   // y labels
   ctx.fillStyle = '#8b949e';

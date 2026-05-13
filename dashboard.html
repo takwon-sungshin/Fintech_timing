@@ -267,13 +267,13 @@ canvas {
       <div class="bar"></div>
       <div class="label">수학 봇 이긴 비율</div>
       <div class="value" id="statWin">—</div>
-      <div class="sub">≥ 89.4점 달성 비율</div>
+      <div class="sub">≥ 92.9점 달성 비율</div>
     </div>
     <div class="stat gap">
       <div class="bar"></div>
       <div class="label">수학 봇과의 격차</div>
       <div class="value" id="statGap">—</div>
-      <div class="sub">학생 평균 − 89.4</div>
+      <div class="sub">학생 평균 − 92.9</div>
     </div>
   </div>
 
@@ -283,8 +283,8 @@ canvas {
       <canvas id="histChart" height="280"></canvas>
       <div class="compare-line">
         <span><span class="swatch" style="background:var(--accent3);"></span>학생 점수</span>
-        <span><span class="swatch" style="background:var(--accent);"></span>수학 봇 89.4</span>
-        <span><span class="swatch" style="background:var(--text-dim);"></span>무작위 76.8</span>
+        <span><span class="swatch" style="background:var(--accent);"></span>수학 봇 92.9</span>
+        <span><span class="swatch" style="background:var(--text-dim);"></span>무작위 77.1</span>
       </div>
     </div>
 
@@ -323,8 +323,8 @@ const db = getDatabase(app);
 const scoresRef = ref(db, 'scores');
 const connRef = ref(db, '.info/connected');
 
-const MATH_BOT = 89.4;
-const RANDOM_BASE = 76.8;
+const MATH_BOT = 92.9;     // 상승장 drift=0.5에서 37% 규칙의 기대 점수
+const RANDOM_BASE = 77.1;  // 무작위 매도의 기대 점수
 
 let scores = []; // {score, ts}
 
@@ -462,7 +462,7 @@ function drawHist() {
     ctx.fillRect(x, y, w, h);
   }
 
-  // reference lines: 89.4 (math bot) and 76.8 (random)
+  // reference lines: 92.9 (math bot) and 77.1 (random)
   function refLine(val, color, label, labelY) {
     const x = padL + plotW * (val / 100);
     ctx.strokeStyle = color;
@@ -478,8 +478,8 @@ function drawHist() {
     ctx.textAlign = 'left';
     ctx.fillText(label, x + 4, labelY);
   }
-  refLine(MATH_BOT, '#58a6ff', '수학 89.4', padT + 14);
-  refLine(RANDOM_BASE, '#8b949e', '랜덤 76.8', padT + 28);
+  refLine(MATH_BOT, '#58a6ff', '수학 92.9', padT + 14);
+  refLine(RANDOM_BASE, '#8b949e', '랜덤 77.1', padT + 28);
 
   // 평균 라인 (학생 평균이 있으면)
   if (scores.length > 0) {
