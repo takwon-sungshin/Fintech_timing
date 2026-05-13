@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로보 어드바이저 — 직감 vs 수학</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2129;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --accent: #58a6ff;
+  --accent2: #3fb950;
+  --accent3: #f0883e;
+  --danger: #ff6b6b;
+  --radius: 10px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', 'Noto Sans KR', sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+  min-height: 100vh;
+  padding: 20px;
+}
+.container { max-width: 1180px; margin: 0 auto; }
+header { margin-bottom: 20px; }
+h1 { font-size: 26px; font-weight: 600; margin-bottom: 4px; }
+h1 .merton { color: var(--accent); }
+header p { color: var(--text-dim); font-size: 13px; line-height: 1.6; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 1080px) {
+  .grid { grid-template-columns: 1fr; }
+  body { padding: 12px; }
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+.panel-title.merton { border-left-color: var(--accent); }
+.panel-title.warm   { border-left-color: var(--accent3); }
+
+.round-info {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 6px 0 10px;
+}
+.round-info .num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 1.5px;
+}
+.round-info .scenario-name {
+  font-size: 22px; font-weight: 600;
+  color: var(--text);
+}
+.round-info .scenario-tag {
+  font-size: 11px; color: var(--accent);
+  background: rgba(88,166,255,0.1);
+  border: 1px solid rgba(88,166,255,0.3);
+  padding: 4px 10px; border-radius: 12px;
+}
+
+.market-params {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+.param-cell {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+}
+.param-cell .lbl {
+  font-size: 10px; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.param-cell .v {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px; font-weight: 500;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.slider-block { margin: 12px 0 6px; }
+.slider-label {
+  display: flex; justify-content: space-between;
+  font-size: 13px; color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.slider-label b {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--accent3); font-size: 22px;
+}
+input[type=range] {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: linear-gradient(90deg, var(--accent2) 0%, var(--accent3) 50%, var(--danger) 100%);
+  border-radius: 3px;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px; height: 24px;
+  background: var(--accent3);
+  border: 2px solid var(--text);
+  border-radius: 50%;
+  cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  width: 24px; height: 24px;
+  background: var(--accent3);
+  border: 2px solid var(--text);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.slider-explain {
+  display: flex; justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px; color: var(--text-dim);
+}
+.slider-explain .left  { color: var(--accent2); }
+.slider-explain .right { color: var(--danger); }
+
+canvas {
+  width: 100% !important;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: block;
+}
+
+button {
+  font-family: 'IBM Plex Sans', 'Noto Sans KR', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 12px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.05s;
+}
+button:hover:not(:disabled) { background: #252a31; }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary {
+  background: var(--accent3);
+  color: #0d1117;
+  border-color: var(--accent3);
+  font-weight: 700;
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+}
+button.primary:hover:not(:disabled) { background: #ff9c4d; }
+button.next {
+  background: var(--accent);
+  color: #0d1117;
+  border-color: var(--accent);
+  font-weight: 600;
+  flex: 1; padding: 11px;
+}
+button.next:hover:not(:disabled) { background: #79b8ff; }
+
+/* ====== 2-column 결과 박스 (학생/Merton) ====== */
+.profit-box {
+  background: linear-gradient(135deg, #1d2230 0%, var(--surface2) 100%);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.profit-side {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+}
+.profit-side .who {
+  font-size: 11px;
+  text-transform: uppercase; letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.profit-side.you    .who { color: var(--accent3); }
+.profit-side.merton .who { color: var(--accent); }
+.profit-side .big-money {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 38px; font-weight: 600;
+  line-height: 1.0;
+  letter-spacing: -1px;
+}
+.profit-side.you    .big-money { color: var(--accent3); }
+.profit-side.merton .big-money { color: var(--accent); }
+.profit-side .delta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 15px;
+  margin-top: 6px;
+}
+.profit-side .delta.pos { color: var(--accent2); }
+.profit-side .delta.neg { color: var(--danger); }
+.profit-side .sub-stats {
+  font-size: 10px; color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-top: 6px;
+}
+
+.profit-box.you-active    .profit-side.you    { box-shadow: 0 0 0 1px rgba(240,136,62,0.4); }
+.profit-box.merton-active .profit-side.merton { box-shadow: 0 0 0 1px rgba(88,166,255,0.4); }
+.profit-side.dim { opacity: 0.3; }
+
+.progress {
+  position: relative;
+  margin-top: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  height: 22px;
+  overflow: hidden;
+}
+.progress-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--accent3), var(--accent));
+  width: 0%;
+  transition: width 0.05s linear;
+}
+.progress-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+  z-index: 2;
+}
+
+.verdict {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: rgba(88, 166, 255, 0.08);
+  border: 1px solid rgba(88, 166, 255, 0.25);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+}
+.verdict b { color: var(--accent); }
+.verdict.win  { background: rgba(63, 185, 80, 0.08); border-color: rgba(63, 185, 80, 0.3); }
+.verdict.win  b { color: var(--accent2); }
+.verdict.lose { background: rgba(255, 107, 107, 0.08); border-color: rgba(255, 107, 107, 0.3); }
+.verdict.lose b { color: var(--danger); }
+
+/* ====== 누적 (학생/Merton 2 카드) ====== */
+.cum-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cum-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.cum-card.you    { border-color: rgba(240, 136, 62, 0.35); }
+.cum-card.merton { border-color: rgba(88, 166, 255, 0.35); }
+.cum-card .name {
+  font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 4px;
+}
+.cum-card.you    .name { color: var(--accent3); }
+.cum-card.merton .name { color: var(--accent); }
+.cum-card .big {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 26px; font-weight: 500;
+  line-height: 1.1;
+}
+.cum-card.you    .big { color: var(--accent3); }
+.cum-card.merton .big { color: var(--accent); }
+.cum-card .sub {
+  font-size: 11px; color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-top: 4px;
+}
+
+.round-history {
+  margin-top: 12px;
+  font-size: 11px;
+}
+.round-history table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.round-history th,
+.round-history td {
+  padding: 6px 4px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.round-history th {
+  color: var(--text-dim);
+  font-weight: 500;
+  text-align: right;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.round-history th:first-child,
+.round-history td:first-child {
+  text-align: left;
+}
+.round-history td.pos { color: var(--accent2); }
+.round-history td.neg { color: var(--danger); }
+.round-history td.dim { color: var(--text-dim); }
+
+.scenario-list {
+  margin-top: 10px;
+  display: flex; gap: 4px;
+  flex-wrap: wrap;
+}
+.scenario-pip {
+  flex: 1;
+  min-width: 0;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+}
+.scenario-pip.done.win   { background: var(--accent2); }
+.scenario-pip.done.lose  { background: var(--danger); }
+.scenario-pip.done.tie   { background: var(--accent3); }
+.scenario-pip.current { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
+
+.final-banner {
+  margin-top: 16px;
+  background: linear-gradient(135deg, rgba(63,185,80,0.12), rgba(88,166,255,0.12));
+  border: 1px solid rgba(63,185,80,0.4);
+  border-radius: 10px;
+  padding: 18px;
+  text-align: center;
+}
+.final-banner .title {
+  font-size: 12px; color: var(--text-dim);
+  letter-spacing: 1.5px; text-transform: uppercase;
+}
+.final-banner .score {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 36px; font-weight: 600;
+  margin: 6px 0; color: var(--text);
+}
+.final-banner .note {
+  font-size: 13px; color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.theory-box {
+  margin-top: 14px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.theory-box .formula {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-align: center;
+  padding: 8px;
+  margin: 6px 0;
+  background: rgba(88,166,255,0.05);
+  border-radius: 6px;
+}
+.theory-box small {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  display: block;
+  margin-top: 4px;
+}
+
+.controls-row {
+  display: flex; gap: 8px;
+  margin-top: 12px;
+}
+
+#nicknameBlock {
+  margin-top: 10px;
+  display: flex; gap: 8px;
+}
+#nickname {
+  flex: 1; padding: 9px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+}
+.share-btn {
+  background: var(--accent2) !important;
+  color: #0d1117 !important;
+  border-color: var(--accent2) !important;
+  font-weight: 600;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>로보 어드바이저 — <span class="merton">직감 vs 수학</span></h1>
+    <p>5가지 시장 상황. 매번 <b style="color:var(--accent3)">위험자산 비중 w</b>를 골라야 한다.<br>
+    수학(<span style="color:var(--accent)">Merton</span>)은 1969년에 이미 답을 증명했다. You의 직감은 어디까지 따라잡을 수 있을까?</p>
+  </header>
+
+  <div class="grid">
+    <!-- 좌측: 게임 패널 -->
+    <div class="panel">
+      <div class="panel-title warm">현재 라운드</div>
+      <div class="round-info">
+        <div>
+          <div class="num" id="roundNum">ROUND 1 / 5</div>
+          <div class="scenario-name" id="scenarioName">정상장</div>
+        </div>
+        <div class="scenario-tag" id="scenarioTag">균형 잡힌 시장</div>
+      </div>
+
+      <div class="market-params">
+        <div class="param-cell">
+          <div class="lbl">기대수익률 μ</div>
+          <div class="v" id="paramMu">7.0%</div>
+        </div>
+        <div class="param-cell">
+          <div class="lbl">변동성 σ</div>
+          <div class="v" id="paramSigma">18%</div>
+        </div>
+        <div class="param-cell">
+          <div class="lbl">무위험 r</div>
+          <div class="v" id="paramR">3.0%</div>
+        </div>
+      </div>
+
+      <div class="scenario-list" id="scenarioList"></div>
+
+      <div class="slider-block">
+        <div class="slider-label">
+          <span>위험자산 비중 <b id="sliderVal">50</b>%</span>
+          <span style="font-size:11px;">나머지 <span id="riskFree">50</span>%는 안전자산</span>
+        </div>
+        <input type="range" id="weightSlider" min="0" max="100" value="50">
+        <div class="slider-explain">
+          <span class="left">← 안전 (낮은 위험·낮은 수익)</span>
+          <span class="right">공격적 (큰 변동·큰 기대) →</span>
+        </div>
+      </div>
+
+      <canvas id="chart" height="180"></canvas>
+
+      <div class="progress" id="progressWrap" style="display:none;">
+        <div class="progress-fill" id="progressFill"></div>
+        <div class="progress-label" id="progressLabel">시뮬레이션 0%</div>
+      </div>
+
+      <div class="profit-box" id="profitBox" style="display:none;">
+        <div class="profit-side you">
+          <div class="who">YOU (직감)</div>
+          <div class="big-money" id="youMoney">₩ 0</div>
+          <div class="delta" id="youDelta">+0%</div>
+          <div class="sub-stats" id="youSub">w = 0%</div>
+        </div>
+        <div class="profit-side merton">
+          <div class="who">MERTON (수학)</div>
+          <div class="big-money" id="mertonMoney">₩ 0</div>
+          <div class="delta" id="mertonDelta">+0%</div>
+          <div class="sub-stats" id="mertonSub">w* = 0%</div>
+        </div>
+      </div>
+
+      <div class="verdict" id="verdict" style="display:none;"></div>
+
+      <div class="controls-row">
+        <button class="primary" id="actBtn">▶  시뮬레이션 시작</button>
+      </div>
+    </div>
+
+    <!-- 우측: 누적 + 이론 -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">누적 결과 (₩10,000 시작 → 5라운드 합산)</div>
+        <div class="cum-grid">
+          <div class="cum-card you">
+            <div class="name">You (직감)</div>
+            <div class="big" id="cumYou">₩ 10,000</div>
+            <div class="sub" id="cumYouSub">+0.00%</div>
+          </div>
+          <div class="cum-card merton">
+            <div class="name">Merton (수학)</div>
+            <div class="big" id="cumMerton">₩ 10,000</div>
+            <div class="sub" id="cumMertonSub">+0.00%</div>
+          </div>
+        </div>
+
+        <div class="round-history" id="roundHistory" style="display:none;">
+          <table>
+            <thead>
+              <tr><th>R</th><th>시장</th><th>You w</th><th>You 수익</th><th>Merton w*</th><th>Merton 수익</th></tr>
+            </thead>
+            <tbody id="histBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px;">
+        <div class="panel-title merton">Merton (1969) — 수학이 증명한 답</div>
+        <div class="theory-box">
+          <div class="formula">w* = (μ − r) / (γ · σ²)</div>
+          <small>
+            <b>μ</b>: 위험자산 기대수익률 &nbsp;|&nbsp;
+            <b>r</b>: 무위험 이자율 &nbsp;|&nbsp;
+            <b>σ</b>: 변동성 &nbsp;|&nbsp;
+            <b>γ</b>: 위험회피계수 (이 게임 γ=2)
+          </small>
+          <small style="margin-top:8px;">
+            로그효용을 최대화하는 위험자산 비중은 시장 파라미터(μ, σ, r)만으로 결정된다.
+            Robert C. Merton은 이 공식으로 1997년 노벨 경제학상을 수상.
+          </small>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px; display:none;" id="finalPanel">
+        <div class="final-banner">
+          <div class="title">FINAL SCORE</div>
+          <div class="score" id="finalScore">—</div>
+          <div class="note" id="finalNote">—</div>
+          <div id="nicknameBlock">
+            <input type="text" id="nickname" placeholder="이름/별명 (3-10자)" maxlength="10">
+            <button class="share-btn" id="submitScore">제출</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, push, set, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDz3ow5BZ6Hcjwd16-tCepDPDovjLP7g4U",
+  authDomain: "fintech-timing.firebaseapp.com",
+  databaseURL: "https://fintech-timing-default-rtdb.firebaseio.com",
+  projectId: "fintech-timing",
+  storageBucket: "fintech-timing.firebasestorage.app",
+  messagingSenderId: "773502107367",
+  appId: "1:773502107367:web:51a8e09d2c0d7b87e4c9f0"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+window.__pushRoboScore = function(payload) {
+  const r = push(ref(db, "robo-scores"));
+  return set(r, { ...payload, ts: serverTimestamp() });
+};
+</script>
+
+<script>
+"use strict";
+
+/* ============================
+   시나리오 (5라운드)
+   γ = 2 → w* = (μ − r) / (γσ²)
+   결과는 비율(0..1)로 클램프해서 시각화 / 점수에는 raw 사용 가능
+============================ */
+const SCENARIOS = [
+  {
+    name: "정상장",
+    tag:  "균형 잡힌 시장",
+    mu:   0.07, sigma: 0.18, r: 0.03,
+    desc: "장기 평균에 가까운, 가장 흔한 시장 상태."
+  },
+  {
+    name: "상승장",
+    tag:  "강한 강세장",
+    mu:   0.15, sigma: 0.15, r: 0.03,
+    desc: "기대수익은 높고 변동성도 낮음. 공격적으로 가야 한다."
+  },
+  {
+    name: "변동성 폭발",
+    tag:  "위기 직전",
+    mu:   0.05, sigma: 0.35, r: 0.03,
+    desc: "수익률은 평범한데 변동성이 매우 높다. 위험 대비 보상 낮음."
+  },
+  {
+    name: "횡보장",
+    tag:  "지지부진한 시장",
+    mu:   0.02, sigma: 0.12, r: 0.03,
+    desc: "주식이 채권만도 못한 시기. 안전자산이 매력적."
+  },
+  {
+    name: "약세장",
+    tag:  "하락장",
+    mu:  -0.03, sigma: 0.25, r: 0.03,
+    desc: "기대수익이 무위험 이자율보다 낮다. 합리적이라면 위험자산 0%."
+  }
+];
+
+const GAMMA = 2.0;
+const STARTING_CASH = 10000;
+const T = 1.0;           // 1년
+const STEPS = 60;        // 시뮬레이션 step (60 step ≈ 일 단위 느낌)
+const N_PATHS_DISPLAY = 80;
+
+// Merton 최적 비중 (raw, 비음수 제약만)
+function mertonOptimal(mu, sigma, r) {
+  const w = (mu - r) / (GAMMA * sigma * sigma);
+  return Math.max(0, w); // 공매도 없음
+}
+// 표시용 (0..1 클램프)
+function mertonClamped(mu, sigma, r) {
+  return Math.min(1, mertonOptimal(mu, sigma, r));
+}
+
+/* ============================
+   상태
+============================ */
+let roundIdx   = 0;
+let phase      = "input"; // input → simulating → result → finished
+let cumYou     = STARTING_CASH;
+let cumMerton  = STARTING_CASH;
+let history    = []; // [{name, wYou, retYou, wMer, retMer}, ...]
+
+/* ============================
+   DOM 헬퍼
+============================ */
+const $ = (id) => document.getElementById(id);
+
+function fmtMoney(v) {
+  return "₩ " + Math.round(v).toLocaleString("ko-KR");
+}
+function fmtPct(v, digits=1) {
+  return (v*100).toFixed(digits) + "%";
+}
+function fmtPctSigned(v, digits=1) {
+  const sign = v >= 0 ? "+" : "";
+  return sign + (v*100).toFixed(digits) + "%";
+}
+
+/* ============================
+   GBM 시뮬레이션
+============================ */
+function randn() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function simulatePath(mu, sigma, r, w, steps=STEPS, T_total=T) {
+  const dt = T_total / steps;
+  let V = 1.0;
+  const path = [V];
+  const drift = (w * mu + (1-w) * r) - 0.5 * w*w * sigma * sigma;
+  for (let i = 0; i < steps; i++) {
+    const dW = randn() * Math.sqrt(dt);
+    V *= Math.exp(drift * dt + w * sigma * dW);
+    path.push(V);
+  }
+  return path;
+}
+// 기대수익률 (해석적, 로그 효용 관점이 아닌 산술 평균)
+function expectedReturn(mu, sigma, r, w) {
+  return w * mu + (1 - w) * r;
+}
+
+/* ============================
+   차트 (canvas 2D)
+============================ */
+const chart = $("chart");
+const ctx = chart.getContext("2d");
+
+const CHART_H = 180;
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = chart.getBoundingClientRect();
+  chart.width  = rect.width * dpr;
+  chart.height = CHART_H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener("resize", () => { resizeCanvas(); drawChart(currentPaths, currentProgress, lastYouW, lastMerW); });
+
+let currentPaths = null;     // {you: [paths], mer: [paths], yMin, yMax}
+let currentProgress = 1.0;   // 0..1
+let lastYouW = 0.5;
+let lastMerW = 0.5;
+
+function makeProjection(yMin, yMax, W, H, padL=42, padR=12, padT=10, padB=22) {
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  return {
+    x: (i, n) => padL + (i / (n - 1)) * innerW,
+    y: (v)    => padT + (1 - (v - yMin) / (yMax - yMin)) * innerH,
+    bounds: {padL, padR, padT, padB, innerW, innerH, W, H}
+  };
+}
+
+function drawChart(paths, progress, youW, merW) {
+  const rect = chart.getBoundingClientRect();
+  const W = rect.width, H = 220;
+  ctx.clearRect(0, 0, W, H);
+
+  // grid
+  ctx.fillStyle = "#0d1117";
+  ctx.fillRect(0, 0, W, H);
+
+  if (!paths) {
+    ctx.fillStyle = "#8b949e";
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("슬라이더로 비중을 정하고 시뮬레이션을 시작하세요", W/2, H/2);
+    return;
+  }
+
+  const {yMin, yMax} = paths;
+  const proj = makeProjection(yMin, yMax, W, H);
+
+  // axis lines
+  ctx.strokeStyle = "#30363d";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(proj.bounds.padL, proj.bounds.padT);
+  ctx.lineTo(proj.bounds.padL, H - proj.bounds.padB);
+  ctx.lineTo(W - proj.bounds.padR, H - proj.bounds.padB);
+  ctx.stroke();
+
+  // y gridlines + labels (1.0 = 시작, 그리고 yMin/yMax 사이 5개)
+  ctx.fillStyle = "#8b949e";
+  ctx.font = "10px 'IBM Plex Mono', monospace";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  const nTicks = 4;
+  for (let i = 0; i <= nTicks; i++) {
+    const v = yMin + (yMax - yMin) * (i / nTicks);
+    const y = proj.y(v);
+    ctx.strokeStyle = (Math.abs(v - 1.0) < 1e-6) ? "#3d4451" : "#1c2129";
+    ctx.beginPath();
+    ctx.moveTo(proj.bounds.padL, y);
+    ctx.lineTo(W - proj.bounds.padR, y);
+    ctx.stroke();
+    ctx.fillStyle = "#8b949e";
+    ctx.fillText(fmtPctSigned(v - 1, 0), proj.bounds.padL - 4, y);
+  }
+
+  // x-axis label
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#8b949e";
+  ctx.fillText("0", proj.bounds.padL, H - 6);
+  ctx.fillText("6개월", proj.bounds.padL + proj.bounds.innerW * 0.5, H - 6);
+  ctx.fillText("1년", W - proj.bounds.padR, H - 6);
+
+  // partial step
+  const totalSteps = paths.you[0].length;
+  const upTo = Math.max(2, Math.floor(totalSteps * progress));
+
+  // draw fan: paths in light
+  function drawFan(pathList, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    for (let p = 0; p < pathList.length; p++) {
+      const path = pathList[p];
+      ctx.beginPath();
+      ctx.moveTo(proj.x(0, totalSteps), proj.y(path[0]));
+      for (let i = 1; i < upTo; i++) {
+        ctx.lineTo(proj.x(i, totalSteps), proj.y(path[i]));
+      }
+      ctx.stroke();
+    }
+  }
+  // YOU 옅은 주황
+  drawFan(paths.you, "rgba(240,136,62,0.10)");
+  // Merton 옅은 파랑
+  drawFan(paths.mer, "rgba(88,166,255,0.10)");
+
+  // 평균선
+  function drawMean(pathList, color, w) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i < upTo; i++) {
+      let sum = 0;
+      for (let p = 0; p < pathList.length; p++) sum += pathList[p][i];
+      const m = sum / pathList.length;
+      if (i === 0) ctx.moveTo(proj.x(i, totalSteps), proj.y(m));
+      else ctx.lineTo(proj.x(i, totalSteps), proj.y(m));
+    }
+    ctx.stroke();
+  }
+  drawMean(paths.you, "#f0883e", youW);
+  drawMean(paths.mer, "#58a6ff", merW);
+
+  // 범례
+  ctx.font = "11px 'IBM Plex Mono', monospace";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#f0883e";
+  ctx.fillText("● YOU (w=" + (youW*100).toFixed(0) + "%)", proj.bounds.padL + 6, proj.bounds.padT + 4);
+  ctx.fillStyle = "#58a6ff";
+  ctx.fillText("● MERTON (w*=" + (merW*100).toFixed(0) + "%)", proj.bounds.padL + 6, proj.bounds.padT + 20);
+}
+
+/* ============================
+   라운드 렌더링
+============================ */
+function renderScenarioList() {
+  const ul = $("scenarioList");
+  ul.innerHTML = "";
+  for (let i = 0; i < SCENARIOS.length; i++) {
+    const div = document.createElement("div");
+    div.className = "scenario-pip";
+    if (i < history.length) {
+      const h = history[i];
+      if (h.retYou > h.retMer + 0.005) div.classList.add("done", "win");
+      else if (h.retYou < h.retMer - 0.005) div.classList.add("done", "lose");
+      else div.classList.add("done", "tie");
+    } else if (i === roundIdx) {
+      div.classList.add("current");
+    }
+    ul.appendChild(div);
+  }
+}
+
+function renderRound() {
+  const s = SCENARIOS[roundIdx];
+  $("roundNum").textContent = "ROUND " + (roundIdx + 1) + " / " + SCENARIOS.length;
+  $("scenarioName").textContent = s.name;
+  $("scenarioTag").textContent = s.tag;
+  $("paramMu").textContent    = fmtPct(s.mu, 1);
+  $("paramSigma").textContent = (s.sigma * 100).toFixed(0) + "%";
+  $("paramR").textContent     = fmtPct(s.r, 1);
+
+  $("weightSlider").value = 50;
+  $("sliderVal").textContent = "50";
+  $("riskFree").textContent  = "50";
+  $("actBtn").textContent = "▶  시뮬레이션 시작";
+  $("actBtn").disabled = false;
+  $("profitBox").style.display = "none";
+  $("verdict").style.display = "none";
+  $("progressWrap").style.display = "none";
+  currentPaths = null; currentProgress = 1.0;
+  lastYouW = 0.5; lastMerW = mertonClamped(s.mu, s.sigma, s.r);
+  drawChart(currentPaths, 1.0, lastYouW, lastMerW);
+  renderScenarioList();
+}
+
+$("weightSlider").addEventListener("input", (e) => {
+  const v = parseInt(e.target.value, 10);
+  $("sliderVal").textContent = v;
+  $("riskFree").textContent  = 100 - v;
+});
+
+/* ============================
+   시뮬레이션 + 결과
+============================ */
+function startSimulation() {
+  if (phase !== "input") return;
+  phase = "simulating";
+  $("actBtn").disabled = true;
+  $("actBtn").textContent = "시뮬레이션 중...";
+
+  const s = SCENARIOS[roundIdx];
+  const wYou = parseInt($("weightSlider").value, 10) / 100;
+  const wMer = mertonClamped(s.mu, s.sigma, s.r);
+  lastYouW = wYou;
+  lastMerW = wMer;
+
+  // paths
+  const youPaths = [];
+  const merPaths = [];
+  for (let i = 0; i < N_PATHS_DISPLAY; i++) {
+    youPaths.push(simulatePath(s.mu, s.sigma, s.r, wYou));
+    merPaths.push(simulatePath(s.mu, s.sigma, s.r, wMer));
+  }
+  // yRange
+  let yMin = Infinity, yMax = -Infinity;
+  function scan(list) {
+    for (let i = 0; i < list.length; i++) {
+      for (let j = 0; j < list[i].length; j++) {
+        if (list[i][j] < yMin) yMin = list[i][j];
+        if (list[i][j] > yMax) yMax = list[i][j];
+      }
+    }
+  }
+  scan(youPaths); scan(merPaths);
+  const pad = (yMax - yMin) * 0.1;
+  yMin -= pad; yMax += pad;
+  currentPaths = {you: youPaths, mer: merPaths, yMin, yMax};
+
+  // 진행 애니메이션 (5초)
+  $("progressWrap").style.display = "block";
+  $("profitBox").style.display = "grid";
+  $("verdict").style.display = "none";
+
+  // count-up 준비
+  const youRet = (youPaths.reduce((a,p)=>a + p[p.length-1], 0) / youPaths.length) - 1;
+  const merRet = (merPaths.reduce((a,p)=>a + p[p.length-1], 0) / merPaths.length) - 1;
+  const youFinal    = STARTING_CASH * (1 + youRet);
+  const mertonFinal = STARTING_CASH * (1 + merRet);
+
+  $("youSub").textContent    = "w = " + (wYou*100).toFixed(0) + "%";
+  $("mertonSub").textContent = "w* = " + (wMer*100).toFixed(0) + "%";
+
+  const DURATION = 5000;
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min(1, (now - start) / DURATION);
+    currentProgress = t;
+    drawChart(currentPaths, t, wYou, wMer);
+    $("progressFill").style.width = (t*100).toFixed(1) + "%";
+    $("progressLabel").textContent = "시뮬레이션 " + Math.round(t*100) + "%";
+
+    // money count-up
+    const yMoney = STARTING_CASH + (youFinal - STARTING_CASH) * t;
+    const mMoney = STARTING_CASH + (mertonFinal - STARTING_CASH) * t;
+    $("youMoney").textContent    = fmtMoney(yMoney);
+    $("mertonMoney").textContent = fmtMoney(mMoney);
+    $("youDelta").textContent    = fmtPctSigned(((yMoney/STARTING_CASH)-1));
+    $("mertonDelta").textContent = fmtPctSigned(((mMoney/STARTING_CASH)-1));
+    $("youDelta").className    = "delta " + ((yMoney >= STARTING_CASH) ? "pos" : "neg");
+    $("mertonDelta").className = "delta " + ((mMoney >= STARTING_CASH) ? "pos" : "neg");
+
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      finishRound(s, wYou, wMer, youRet, merRet);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function finishRound(s, wYou, wMer, youRet, merRet) {
+  phase = "result";
+  cumYou    *= (1 + youRet);
+  cumMerton *= (1 + merRet);
+
+  history.push({
+    name: s.name, wYou, retYou: youRet,
+    wMer, retMer: merRet
+  });
+
+  // 누적
+  $("cumYou").textContent    = fmtMoney(cumYou);
+  $("cumMerton").textContent = fmtMoney(cumMerton);
+  $("cumYouSub").textContent    = fmtPctSigned(cumYou/STARTING_CASH - 1, 2);
+  $("cumMertonSub").textContent = fmtPctSigned(cumMerton/STARTING_CASH - 1, 2);
+
+  // 라운드 history table
+  const tbody = $("histBody");
+  tbody.innerHTML = "";
+  history.forEach((h, idx) => {
+    const tr = document.createElement("tr");
+    const youCls = h.retYou >= 0 ? "pos" : "neg";
+    const merCls = h.retMer >= 0 ? "pos" : "neg";
+    tr.innerHTML =
+      "<td class='dim'>" + (idx+1) + "</td>" +
+      "<td class='dim'>" + h.name + "</td>" +
+      "<td>" + (h.wYou*100).toFixed(0) + "%</td>" +
+      "<td class='" + youCls + "'>" + fmtPctSigned(h.retYou, 1) + "</td>" +
+      "<td>" + (h.wMer*100).toFixed(0) + "%</td>" +
+      "<td class='" + merCls + "'>" + fmtPctSigned(h.retMer, 1) + "</td>";
+    tbody.appendChild(tr);
+  });
+  $("roundHistory").style.display = "block";
+
+  // verdict
+  const v = $("verdict");
+  const diff = youRet - merRet;
+  if (Math.abs(diff) < 0.005) {
+    v.className = "verdict";
+    v.innerHTML = "이번 라운드는 <b>무승부</b>. You의 직감과 수학이 비슷한 결론.";
+  } else if (diff > 0) {
+    v.className = "verdict win";
+    v.innerHTML = "이번 라운드는 <b>You의 직감</b>이 수학을 이겼다. (하지만 운일 수 있어 — 5라운드 누적으로 보자)";
+  } else {
+    v.className = "verdict lose";
+    v.innerHTML = "이번 라운드는 <b>수학(Merton)</b>이 이겼다. <br>" +
+      "Merton의 답: <b>w*=" + (wMer*100).toFixed(0) + "%</b>. <br>" +
+      "<small style='color:var(--text-dim)'>" + s.desc + "</small>";
+  }
+  v.style.display = "block";
+
+  // 다음 버튼
+  $("actBtn").disabled = false;
+  if (roundIdx + 1 < SCENARIOS.length) {
+    $("actBtn").textContent = "▶  다음 라운드 (" + (roundIdx + 2) + "/" + SCENARIOS.length + ")";
+  } else {
+    $("actBtn").textContent = "★  최종 결과 보기";
+  }
+  renderScenarioList();
+}
+
+function nextRound() {
+  if (roundIdx + 1 < SCENARIOS.length) {
+    roundIdx++;
+    phase = "input";
+    renderRound();
+  } else {
+    finishGame();
+  }
+}
+
+/* ============================
+   최종
+============================ */
+function finishGame() {
+  phase = "finished";
+  $("finalPanel").style.display = "block";
+  const youPct = cumYou/STARTING_CASH - 1;
+  const merPct = cumMerton/STARTING_CASH - 1;
+  const gap    = youPct - merPct;
+  const score  = Math.round(100 * (youPct - merPct + 0.5));
+
+  $("finalScore").textContent = (gap >= 0 ? "+" : "") + (gap*100).toFixed(2) + "%p";
+  $("finalNote").innerHTML =
+    (gap >= 0
+      ? "<b style='color:var(--accent2)'>축하해. You의 직감이 Merton을 이겼다.</b><br>"
+      : "<b style='color:var(--danger)'>Merton(수학)이 이번 게임의 승자.</b><br>") +
+    "직감: " + fmtPctSigned(youPct, 2) + " &nbsp;|&nbsp; 수학: " + fmtPctSigned(merPct, 2);
+
+  $("actBtn").style.display = "none";
+}
+
+/* ============================
+   제출
+============================ */
+$("submitScore").addEventListener("click", async () => {
+  const nick = $("nickname").value.trim();
+  if (nick.length < 1 || nick.length > 10) {
+    alert("1~10자로 입력해줘");
+    return;
+  }
+  const payload = {
+    nickname: nick,
+    rounds: history.map(h => ({
+      name: h.name,
+      wYou: +h.wYou.toFixed(3),
+      retYou: +h.retYou.toFixed(4),
+      wMer: +h.wMer.toFixed(3),
+      retMer: +h.retMer.toFixed(4)
+    })),
+    cumYou: +(cumYou/STARTING_CASH - 1).toFixed(4),
+    cumMer: +(cumMerton/STARTING_CASH - 1).toFixed(4),
+    gap:    +((cumYou - cumMerton)/STARTING_CASH).toFixed(4)
+  };
+  try {
+    await window.__pushRoboScore(payload);
+    $("submitScore").textContent = "✓ 제출 완료";
+    $("submitScore").disabled = true;
+    $("nickname").disabled = true;
+  } catch (e) {
+    alert("전송 실패: " + e.message);
+  }
+});
+
+/* ============================
+   엔트리 포인트
+============================ */
+$("actBtn").addEventListener("click", () => {
+  if (phase === "input") {
+    startSimulation();
+  } else if (phase === "result") {
+    nextRound();
+  }
+});
+
+resizeCanvas();
+renderRound();
+</script>
+</body>
+</html>
