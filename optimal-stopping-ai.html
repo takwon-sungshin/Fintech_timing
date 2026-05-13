@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>매도 타이밍 게임 — 직감 vs 수학 vs AI</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2129;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --accent: #58a6ff;
+  --accent2: #3fb950;
+  --accent3: #f0883e;
+  --accent4: #d2a8ff;
+  --danger: #ff6b6b;
+  --radius: 10px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', 'Noto Sans KR', sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+  min-height: 100vh;
+  padding: 20px;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+header { margin-bottom: 24px; }
+h1 { font-size: 28px; font-weight: 600; margin-bottom: 6px; }
+h1 span { color: var(--accent); }
+h1 .ai { color: var(--accent4); }
+header p { color: var(--text-dim); font-size: 14px; line-height: 1.6; }
+header .scenario {
+  background: rgba(88, 166, 255, 0.08);
+  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  margin-top: 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 980px) {
+  .grid { grid-template-columns: 1fr; }
+  body { padding: 12px; }
+  h1 { font-size: 22px; }
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+.panel-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+.panel-title.ai { border-left-color: var(--accent4); }
+
+.offer-display { text-align: center; padding: 14px 0 18px; }
+.offer-step {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.offer-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 56px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1;
+}
+.offer-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--text-dim);
+  height: 20px;
+  margin-top: 6px;
+}
+
+canvas {
+  width: 100% !important;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: block;
+}
+
+.button-row { display: flex; gap: 10px; margin-top: 16px; }
+button {
+  flex: 1;
+  font-family: 'IBM Plex Sans', 'Noto Sans KR', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 12px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.05s;
+}
+button:hover:not(:disabled) { background: #252a31; }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary {
+  background: var(--accent);
+  color: #0d1117;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+button.primary:hover:not(:disabled) { background: #79b8ff; }
+button.danger {
+  background: var(--danger);
+  color: white;
+  border-color: var(--danger);
+  font-weight: 700;
+  font-size: 18px;
+  padding: 16px;
+  letter-spacing: 0.5px;
+}
+button.danger:hover:not(:disabled) { background: #ff8585; }
+button.danger:disabled { background: var(--surface2); color: var(--text-dim); border-color: var(--border); }
+button.skip {
+  background: var(--surface2);
+  border-color: var(--border);
+  font-size: 15px;
+  padding: 16px;
+}
+button.ai-btn {
+  background: var(--accent4);
+  color: #0d1117;
+  border-color: var(--accent4);
+  font-weight: 600;
+}
+button.ai-btn:hover:not(:disabled) { background: #e2c0ff; }
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  .result-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.result-cell {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 6px;
+  text-align: center;
+}
+.result-cell .label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.result-cell .value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 500;
+}
+.result-cell.you .value { color: var(--accent3); }
+.result-cell.max .value { color: var(--accent2); }
+.result-cell.bot .value { color: var(--accent); }
+.result-cell.ai .value { color: var(--accent4); }
+.result-cell .sub {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-top: 2px;
+}
+
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr; } }
+.stat-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.stat-block.you { border-color: rgba(240, 136, 62, 0.35); }
+.stat-block.bot { border-color: rgba(88, 166, 255, 0.35); }
+.stat-block.ai { border-color: rgba(210, 168, 255, 0.35); }
+.stat-block .name {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.stat-block.you .name { color: var(--accent3); }
+.stat-block.bot .name { color: var(--accent); }
+.stat-block.ai .name { color: var(--accent4); }
+.stat-block .big {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 24px;
+  font-weight: 500;
+  margin-bottom: 2px;
+  line-height: 1.1;
+}
+.stat-block .sub {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.explain { font-size: 13px; color: var(--text-dim); line-height: 1.65; }
+.explain b { color: var(--text); font-weight: 500; }
+.explain code {
+  font-family: 'IBM Plex Mono', monospace;
+  background: var(--bg);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.speed-row {
+  display: flex; gap: 6px; font-size: 12px; color: var(--text-dim);
+  align-items: center; justify-content: center; margin-top: 14px;
+  flex-wrap: wrap;
+}
+.speed-row button {
+  padding: 4px 12px; font-size: 12px; flex: 0 0 auto;
+  background: var(--bg); border: 1px solid var(--border);
+}
+.speed-row button.active {
+  background: var(--accent); color: var(--bg); border-color: var(--accent);
+}
+
+.bar-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.bar-label {
+  width: 40px; font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.bar-track {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; height: 16px; position: relative; overflow: hidden;
+}
+.bar-fill {
+  position: absolute; left: 0; top: 0; height: 100%;
+  border-radius: 3px; transition: width 0.4s ease;
+}
+.bar-val {
+  width: 42px; text-align: right;
+  font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+}
+
+.footer-credit {
+  margin-top: 24px; text-align: center;
+  color: var(--text-dim); font-size: 12px;
+}
+
+.ai-status {
+  display: flex; gap: 8px; font-size: 12px;
+  color: var(--text-dim); margin-bottom: 10px;
+  align-items: center; flex-wrap: wrap;
+}
+.ai-status .badge {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+}
+.ai-status .badge.untrained { color: var(--danger); border-color: rgba(255,107,107,0.4); }
+.ai-status .badge.training { color: var(--accent3); border-color: rgba(240,136,62,0.4); }
+.ai-status .badge.trained { color: var(--accent2); border-color: rgba(63,185,80,0.4); }
+
+.callout {
+  background: rgba(210, 168, 255, 0.08);
+  border: 1px solid rgba(210, 168, 255, 0.25);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+  margin-top: 12px;
+}
+.callout b { color: var(--accent4); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>매도 타이밍 게임 — 직감 <span>vs</span> 수학 <span class="ai">vs AI</span></h1>
+    <p>30번의 매수 호가가 차례로 들어옵니다. <b>딱 한 번만 팔 수 있고</b>, 거절하면 다음 호가로 넘어가요. 지나간 호가는 다시 안 돌아옵니다.</p>
+    <div class="scenario">
+      <b>시나리오:</b> 당신은 보유 주식 1,000주를 갖고 있어요. 30일 동안 매일 한 번 매수자가 가격을 제시하고, <b>한 번만</b> 매도할 수 있어요. 가장 높은 가격에 가깝게 팔아보세요. — 매 시점 가격이 독립적이라고 가정하면, 이건 1949년 Cayley가 제기하고 1960년대 수학자들이 답을 증명한 <b>비서 문제(Secretary Problem)</b>가 되고, 그 정답이 다음에 보일 <b>37% 규칙</b>입니다.
+    </div>
+  </header>
+
+  <div class="grid">
+    <div style="display:flex; flex-direction:column; gap:16px;">
+
+      <div class="panel">
+        <div class="panel-title">진행 중인 라운드</div>
+
+        <div class="offer-display">
+          <div class="offer-step" id="stepLabel">대기 중</div>
+          <div class="offer-value" id="offerValue">—</div>
+          <div class="offer-meta" id="offerMeta"></div>
+        </div>
+
+        <canvas id="chart" height="200"></canvas>
+
+        <div class="button-row">
+          <button id="startBtn" class="primary">시작</button>
+          <button id="skipBtn" class="skip" disabled>패스</button>
+          <button id="sellBtn" class="danger" disabled>이 호가에 매도!</button>
+        </div>
+
+        <div class="speed-row">
+          <span>속도</span>
+          <button data-speed="1500">느림</button>
+          <button data-speed="1000" class="active">보통</button>
+          <button data-speed="500">빠름</button>
+          <button data-speed="200">매우 빠름</button>
+        </div>
+      </div>
+
+      <div class="panel" id="resultPanel" style="display:none;">
+        <div class="panel-title">방금 라운드 결과</div>
+        <div class="result-grid">
+          <div class="result-cell you">
+            <div class="label">당신</div>
+            <div class="value" id="resYou">—</div>
+            <div class="sub" id="resYouStep">—</div>
+          </div>
+          <div class="result-cell max">
+            <div class="label">실제 최고가</div>
+            <div class="value" id="resMax">—</div>
+            <div class="sub" id="resMaxStep">—</div>
+          </div>
+          <div class="result-cell bot">
+            <div class="label">수학 봇 (37%)</div>
+            <div class="value" id="resBot">—</div>
+            <div class="sub" id="resBotStep">—</div>
+          </div>
+          <div class="result-cell ai">
+            <div class="label">AI 봇 (RL)</div>
+            <div class="value" id="resAI">—</div>
+            <div class="sub" id="resAIStep">—</div>
+          </div>
+        </div>
+        <div id="verdict" style="margin-top:14px; text-align:center; font-size:14px;"></div>
+      </div>
+
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:16px;">
+
+      <div class="panel">
+        <div class="panel-title ai">강화학습 AI 봇</div>
+
+        <div class="ai-status">
+          <span>상태</span>
+          <span class="badge untrained" id="aiBadge">학습 전</span>
+          <span id="aiEpisodeText" style="font-family:'IBM Plex Mono', monospace; font-size:12px;"></span>
+        </div>
+
+        <canvas id="learnChart" height="160"></canvas>
+
+        <div class="button-row" style="margin-top:12px;">
+          <button id="trainBtn" class="ai-btn">AI 학습 시작 (2000판)</button>
+          <button id="trainMoreBtn" disabled>+2000판 더</button>
+        </div>
+
+        <div class="callout">
+          AI는 <b>Q-learning</b>으로 게임을 처음부터 배웁니다. 룰도 모르고 시작해서, 시행착오만으로 정책을 찾아갑니다. 학습 곡선이 약 <b>76점에서 시작해서 89점에 수렴</b>해요. 이게 정확히 1960년대 수학이 증명한 그 37% 규칙의 평균 점수입니다.
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">누적 성적</div>
+        <div class="stats-grid">
+          <div class="stat-block you">
+            <div class="name">당신</div>
+            <div class="big" id="youAvg">—</div>
+            <div class="sub" id="youDetail">0판</div>
+          </div>
+          <div class="stat-block bot">
+            <div class="name">수학 봇</div>
+            <div class="big" id="botAvg">—</div>
+            <div class="sub" id="botDetail">0판</div>
+          </div>
+          <div class="stat-block ai">
+            <div class="name">AI 봇</div>
+            <div class="big" id="aiAvg">—</div>
+            <div class="sub" id="aiDetail">0판</div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-dim); margin-bottom:8px;">
+            평균 점수 (최고가 대비 비율, 100 = 완벽)
+          </div>
+          <div>
+            <div class="bar-row">
+              <div class="bar-label" style="color:var(--accent3);">YOU</div>
+              <div class="bar-track"><div class="bar-fill" id="youBar" style="background:var(--accent3); width:0;"></div></div>
+              <div class="bar-val" id="youBarVal">—</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label" style="color:var(--accent);">MATH</div>
+              <div class="bar-track"><div class="bar-fill" id="botBar" style="background:var(--accent); width:0;"></div></div>
+              <div class="bar-val" id="botBarVal">—</div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label" style="color:var(--accent4);">AI</div>
+              <div class="bar-track"><div class="bar-fill" id="aiBar" style="background:var(--accent4); width:0;"></div></div>
+              <div class="bar-val" id="aiBarVal">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button id="resetBtn">통계 초기화</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">수학과 AI가 같은 답에 도달하는 이유</div>
+        <div class="explain">
+          <b>수학 봇</b>은 <b>37% 규칙</b>을 씁니다: 처음 <code>N/e ≈ 11</code>번의 호가는 관찰만 하고, 그 다음부터는 본 적 없는 새 최고가가 나오면 즉시 매도. Dynkin·Lindley가 이게 최적임을 증명했고, 이 정책의 최대값 적중률이 정확히 <code>1/e ≈ 37%</code>예요.<br><br>
+          <b>AI 봇</b>은 강화학습(Q-learning)으로 룰을 모른 채 시작합니다. 무작위 시도 → 보상 → 가치 함수 업데이트를 반복하면서, <b>수렴된 정책이 37% 규칙과 동일한 모양</b>으로 형성돼요.<br><br>
+          이건 우연이 아니에요. 강화학습의 수학적 뿌리가 <code>Bellman 방정식</code>이고, optimal stopping은 그 방정식의 해의 가장 기본적인 형태입니다. <b>수학이 1초에 증명한 답을 AI가 2000판 학습해서 도달하는 거예요.</b> ChatGPT, 자율주행, 알고리즘 트레이딩의 RL이 모두 같은 수학 기반에서 작동합니다.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer-credit">
+    성신여자대학교 수리통계데이터사이언스학부 · 핀테크 트랙 데모 · Secretary Problem + Q-learning
+  </div>
+</div>
+
+<script>
+// ============== State ==============
+const N = 30;
+const OFFER_MEAN = 100;
+const OFFER_STD = 15;
+let tickMs = 1000;
+let timer = null;
+let phase = 'idle'; // idle | playing | finished
+let offers = [];   // i.i.d. 가격 시퀀스
+let step = 0;
+let studentSold = false;
+let studentSoldStep = -1;
+let studentSoldPrice = 0;
+let maxPrice = 0;
+let maxStep = 0;
+let botSoldStep = -1;
+let botSoldPrice = 0;
+let aiSoldStep = -1;
+let aiSoldPrice = 0;
+let history = []; // {youScore, botScore, aiScore}
+
+// ============== Random ==============
+function gauss() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+// i.i.d. 오퍼: N(mean, std) 정규분포
+function generateOffers() {
+  const arr = [];
+  for (let i = 0; i < N; i++) {
+    const v = OFFER_MEAN + OFFER_STD * gauss();
+    arr.push(Math.max(40, v));
+  }
+  return arr;
+}
+
+// ============== 수학 봇 (37% 규칙) ==============
+function botChoose(arr) {
+  const lookN = Math.floor(arr.length / Math.E); // 30/e ≈ 11
+  let bestObs = -Infinity;
+  for (let i = 0; i < lookN; i++) bestObs = Math.max(bestObs, arr[i]);
+  for (let i = lookN; i < arr.length; i++) {
+    if (arr[i] > bestObs) return { step: i, price: arr[i] };
+  }
+  return { step: arr.length - 1, price: arr[arr.length - 1] };
+}
+
+// ============== AI 봇 (Q-learning) ==============
+// State: (step_bucket × running-max-rank-bucket)
+// running-max-rank: 지금까지 본 N개 중 현재 값이 어느 순위인가
+const STEP_BUCKETS = 10;
+const RANK_BUCKETS = 6;
+const N_ACTIONS = 2;
+
+const AI = {
+  Q: null,
+  trained: false,
+  episodesDone: 0,
+  learningCurve: [],
+  alpha: 0.1,
+  gamma: 1.0,         // episodic finite-horizon이라 undiscounted
+};
+
+function initQ() {
+  AI.Q = new Float64Array(STEP_BUCKETS * RANK_BUCKETS * N_ACTIONS);
+  AI.trained = false;
+  AI.episodesDone = 0;
+  AI.learningCurve = [];
+}
+initQ();
+
+function rankOf(value, seen) {
+  // value의 순위 (1 = 가장 큰 값, seen.length = 가장 작은 값)
+  let rank = 1;
+  for (const v of seen) if (v > value) rank++;
+  return rank;
+}
+
+function stateOf(stepIdx, currentVal, seenSoFar) {
+  const sB = Math.min(STEP_BUCKETS - 1, Math.floor(stepIdx / N * STEP_BUCKETS));
+  // 현재 값이 지금까지 본 것 중 1위인지, 그 외인지에 따라 분류
+  const r = rankOf(currentVal, seenSoFar);
+  let rB;
+  if (r === 1) rB = 0;         // 현재까지의 최댓값
+  else if (r === 2) rB = 1;
+  else if (r <= 3) rB = 2;
+  else if (r <= 5) rB = 3;
+  else if (r <= 10) rB = 4;
+  else rB = 5;
+  return sB * RANK_BUCKETS + rB;
+}
+
+function qIdx(state, action) { return state * N_ACTIONS + action; }
+function qMax(state) {
+  const a = AI.Q[qIdx(state, 0)];
+  const b = AI.Q[qIdx(state, 1)];
+  return a > b ? a : b;
+}
+function qArgmax(state) {
+  const a = AI.Q[qIdx(state, 0)];
+  const b = AI.Q[qIdx(state, 1)];
+  // 동점일 땐 랜덤 — 학습 전엔 모두 0이라 첫 행동도 진짜 랜덤
+  if (Math.abs(a - b) < 1e-9) return Math.random() < 0.5 ? 0 : 1;
+  return a > b ? 0 : 1;
+}
+
+function aiPolicy(arr, epsilon = 0) {
+  const seen = [];
+  for (let i = 0; i < arr.length; i++) {
+    seen.push(arr[i]);
+    const state = stateOf(i, arr[i], seen);
+    let action;
+    if (Math.random() < epsilon) {
+      action = Math.random() < 0.5 ? 1 : 0;
+    } else {
+      action = qArgmax(state);
+    }
+    if (i === arr.length - 1) action = 1;
+    if (action === 1) return { step: i, price: arr[i] };
+  }
+  return { step: arr.length - 1, price: arr[arr.length - 1] };
+}
+
+function trainOneEpisode(uniformExplore) {
+  // 학습 동안 trajectory 생성 방식:
+  // (a) uniformExplore=true: 매 episode t~U(0,N-1) 샘플, t 직전까지 HOLD, t에서 SELL.
+  //     → 모든 (step, action) 쌍이 균등하게 방문되어 진짜 Q-learning이 동작함
+  // (b) uniformExplore=false: 현재 정책 + epsilon-greedy로 trajectory (post-training fine-tune)
+  const arr = generateOffers();
+  const max = Math.max(...arr);
+  const seen = [];
+  const traj = [];
+
+  if (uniformExplore) {
+    const stopT = Math.floor(Math.random() * N);
+    for (let i = 0; i <= stopT; i++) {
+      seen.push(arr[i]);
+      const state = stateOf(i, arr[i], seen);
+      const action = (i === stopT) ? 1 : 0;
+      const reward = (action === 1) ? (arr[i] / max) * 100 : 0;
+      traj.push({ state, action, reward });
+    }
+  } else {
+    let sold = false;
+    const epsilon = 0.1;
+    for (let i = 0; i < arr.length && !sold; i++) {
+      seen.push(arr[i]);
+      const state = stateOf(i, arr[i], seen);
+      let action;
+      if (Math.random() < epsilon) action = Math.random() < 0.5 ? 1 : 0;
+      else action = qArgmax(state);
+      if (i === arr.length - 1) action = 1;
+      let reward = 0;
+      if (action === 1) {
+        reward = (arr[i] / max) * 100;
+        sold = true;
+      }
+      traj.push({ state, action, reward });
+    }
+  }
+
+  // Q-learning backward update (γ=1.0, max-action bootstrap)
+  for (let t = traj.length - 1; t >= 0; t--) {
+    const { state, action, reward } = traj[t];
+    const nextMaxQ = (t === traj.length - 1) ? 0 : qMax(traj[t + 1].state);
+    const target = reward + AI.gamma * nextMaxQ;
+    const cur = AI.Q[qIdx(state, action)];
+    AI.Q[qIdx(state, action)] = cur + AI.alpha * (target - cur);
+  }
+  return traj[traj.length - 1].reward;
+}
+
+function evalCurrentPolicy(numSamples) {
+  // 현재 학습된 Q로 greedy policy를 numSamples번 평가
+  let sum = 0;
+  for (let k = 0; k < numSamples; k++) {
+    const arr = generateOffers();
+    const max = Math.max(...arr);
+    const seen = [];
+    let sold = false, score = 0;
+    for (let i = 0; i < arr.length && !sold; i++) {
+      seen.push(arr[i]);
+      const state = stateOf(i, arr[i], seen);
+      let action = qArgmax(state);
+      if (i === arr.length - 1) action = 1;
+      if (action === 1) { score = arr[i] / max * 100; sold = true; }
+    }
+    sum += score;
+  }
+  return sum / numSamples;
+}
+
+async function trainAI(episodes) {
+  document.getElementById('aiBadge').className = 'badge training';
+  document.getElementById('aiBadge').textContent = '학습 중...';
+  document.getElementById('trainBtn').disabled = true;
+  document.getElementById('trainMoreBtn').disabled = true;
+
+  // 학습 곡선의 시작점이 평평하게 출발하도록, 첫 chunk에서 학습 전 평가 한 번
+  if (AI.learningCurve.length === 0) {
+    const baseline = evalCurrentPolicy(100);
+    AI.learningCurve.push({ ep: 0, avg: baseline });
+  }
+
+  const CHUNK = 100;
+  for (let e = 0; e < episodes; e++) {
+    trainOneEpisode(true); // 균등 stopping-time 탐색
+    AI.episodesDone++;
+    if ((e + 1) % CHUNK === 0 || e === episodes - 1) {
+      // chunk 끝마다 greedy policy 평가 (real test)
+      const evalAvg = evalCurrentPolicy(200);
+      AI.learningCurve.push({ ep: AI.episodesDone, avg: evalAvg });
+      document.getElementById('aiEpisodeText').textContent = `에피소드 ${AI.episodesDone} · greedy 정책 ${evalAvg.toFixed(1)}점`;
+      drawLearnChart();
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  AI.trained = true;
+  document.getElementById('aiBadge').className = 'badge trained';
+  document.getElementById('aiBadge').textContent = `학습 완료 · ${AI.episodesDone}판`;
+  document.getElementById('trainBtn').textContent = '✓ 학습 완료';
+  document.getElementById('trainBtn').disabled = true;
+  document.getElementById('trainMoreBtn').disabled = false;
+}
+
+// ============== Game loop ==============
+function startRound() {
+  phase = 'playing';
+  offers = generateOffers();
+  step = 0;
+  studentSold = false;
+  studentSoldStep = -1;
+  studentSoldPrice = 0;
+  document.getElementById('resultPanel').style.display = 'none';
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('sellBtn').disabled = false;
+  document.getElementById('skipBtn').disabled = false;
+  document.getElementById('startBtn').textContent = '진행 중...';
+  updateDisplay();
+  drawChart();
+  timer = setInterval(tick, tickMs);
+}
+
+function tick() {
+  if (phase !== 'playing') return;
+  step++;
+  if (step >= N) {
+    if (!studentSold) {
+      studentSold = true;
+      studentSoldStep = N - 1;
+      studentSoldPrice = offers[N - 1];
+    }
+    endRound();
+    return;
+  }
+  updateDisplay();
+  drawChart();
+}
+
+function sellNow() {
+  if (phase !== 'playing' || studentSold) return;
+  studentSold = true;
+  studentSoldStep = step;
+  studentSoldPrice = offers[step];
+  document.getElementById('sellBtn').disabled = true;
+  document.getElementById('skipBtn').disabled = true;
+  drawChart();
+}
+
+function skipNow() {
+  // 다음 step으로 즉시 진행
+  if (phase !== 'playing' || studentSold) return;
+  clearInterval(timer);
+  tick();
+  timer = setInterval(tick, tickMs);
+}
+
+function endRound() {
+  clearInterval(timer);
+  phase = 'finished';
+  maxPrice = Math.max(...offers);
+  maxStep = offers.indexOf(maxPrice);
+  const bot = botChoose(offers);
+  botSoldStep = bot.step;
+  botSoldPrice = bot.price;
+  const ai = aiPolicy(offers, 0);
+  aiSoldStep = ai.step;
+  aiSoldPrice = ai.price;
+
+  const youScore = (studentSoldPrice / maxPrice) * 100;
+  const botScore = (botSoldPrice / maxPrice) * 100;
+  const aiScore = (aiSoldPrice / maxPrice) * 100;
+  history.push({ youScore, botScore, aiScore });
+
+  // Firebase로 학생 점수만 송신 (강의 대시보드용, 실패해도 게임은 그대로)
+  if (typeof window.__sendScore === 'function') window.__sendScore(youScore);
+
+  document.getElementById('resultPanel').style.display = 'block';
+  document.getElementById('resYou').textContent = studentSoldPrice.toFixed(1);
+  document.getElementById('resYouStep').textContent = `${studentSoldStep + 1}번 호가 · ${youScore.toFixed(1)}점`;
+  document.getElementById('resMax').textContent = maxPrice.toFixed(1);
+  document.getElementById('resMaxStep').textContent = `${maxStep + 1}번 호가`;
+  document.getElementById('resBot').textContent = botSoldPrice.toFixed(1);
+  document.getElementById('resBotStep').textContent = `${botSoldStep + 1}번 호가 · ${botScore.toFixed(1)}점`;
+  document.getElementById('resAI').textContent = aiSoldPrice.toFixed(1);
+  document.getElementById('resAIStep').textContent = `${aiSoldStep + 1}번 호가 · ${aiScore.toFixed(1)}점` + (AI.trained ? '' : ' (학습 전)');
+
+  const scores = [
+    { name: '당신', s: youScore, color: 'var(--accent3)' },
+    { name: '수학', s: botScore, color: 'var(--accent)' },
+    { name: 'AI', s: aiScore, color: 'var(--accent4)' },
+  ].sort((a, b) => b.s - a.s);
+  const v = `<b style="color:${scores[0].color};">${scores[0].name} 1위</b> ${scores[0].s.toFixed(1)} · ${scores[1].name} ${scores[1].s.toFixed(1)} · ${scores[2].name} ${scores[2].s.toFixed(1)}`;
+  document.getElementById('verdict').innerHTML = v;
+
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('startBtn').textContent = '다음 라운드';
+  document.getElementById('sellBtn').disabled = true;
+  document.getElementById('skipBtn').disabled = true;
+  document.getElementById('stepLabel').textContent = '라운드 종료';
+  document.getElementById('offerMeta').textContent = '';
+  drawChart();
+  updateStats();
+}
+
+// ============== Display ==============
+function updateDisplay() {
+  document.getElementById('stepLabel').textContent = `${step + 1}번째 호가 / ${N}번 중`;
+  const cur = offers[step];
+  document.getElementById('offerValue').textContent = cur.toFixed(1);
+  const sofar = offers.slice(0, step + 1);
+  const max = Math.max(...sofar);
+  const isMax = Math.abs(cur - max) < 1e-9;
+  document.getElementById('offerMeta').textContent = isMax
+    ? `지금까지 본 ${step + 1}번 중 최고가 ⭐`
+    : `지금까지 본 최고가 ${max.toFixed(1)}`;
+}
+
+// ============== Canvas ==============
+const CHART_CSS_H = 200;
+const LEARN_CSS_H = 160;
+function fixCanvas(id, cssH) {
+  const c = document.getElementById(id);
+  const dpr = window.devicePixelRatio || 1;
+  const rect = c.getBoundingClientRect();
+  const cssW = rect.width;
+  c.style.height = cssH + 'px';
+  c.width = Math.max(400, Math.floor(cssW * dpr));
+  c.height = Math.floor(cssH * dpr);
+  c._dpr = dpr; c._cssW = cssW; c._cssH = cssH;
+}
+
+function drawChart() {
+  const c = document.getElementById('chart');
+  const ctx = c.getContext('2d');
+  const dpr = c._dpr || 1;
+  const W = c._cssW || c.width;
+  const H = c._cssH || c.height;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const padL = 36, padR = 14, padT = 14, padB = 22;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 4; i++) {
+    const y = padT + plotH * (i / 3);
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(W - padR, y);
+    ctx.stroke();
+  }
+
+  if (offers.length === 0) return;
+
+  const drawTo = phase === 'finished' ? N : step + 1;
+  // y 범위는 모든 라운드에 걸쳐 일관되게 표시되도록
+  const allVis = phase === 'finished' ? offers : offers.slice(0, drawTo);
+  let minV = Math.min(...allVis);
+  let maxV = Math.max(...allVis);
+  const range = maxV - minV || 1;
+  const pad = range * 0.12;
+  minV -= pad; maxV += pad;
+
+  const xC = (i) => padL + plotW * (i / (N - 1));
+  const yC = (v) => padT + plotH - plotH * ((v - minV) / (maxV - minV));
+
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '10px "IBM Plex Mono", monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText(maxV.toFixed(0), padL - 4, padT + 4);
+  ctx.fillText(minV.toFixed(0), padL - 4, H - padB);
+
+  // 관찰 종료선 (라운드 끝났을 때만)
+  if (phase === 'finished') {
+    const lookN = Math.floor(N / Math.E);
+    const xb = xC(lookN - 0.5);
+    ctx.strokeStyle = '#30363d';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(xb, padT);
+    ctx.lineTo(xb, H - padB);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#8b949e';
+    ctx.textAlign = 'left';
+    ctx.font = '10px "IBM Plex Mono", monospace';
+    ctx.fillText('관찰 종료 (' + lookN + '명)', xb + 4, padT + 10);
+  }
+
+  // i.i.d. 오퍼는 line이 아니라 vertical sticks + dots으로 표현 (각 시점 독립이라는 시각적 신호)
+  ctx.strokeStyle = 'rgba(88, 166, 255, 0.4)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < drawTo; i++) {
+    const x = xC(i), y = yC(offers[i]);
+    const yBase = padT + plotH;
+    ctx.beginPath();
+    ctx.moveTo(x, yBase);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#58a6ff';
+  for (let i = 0; i < drawTo; i++) {
+    ctx.beginPath();
+    ctx.arc(xC(i), yC(offers[i]), 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (phase === 'playing' && step < N) {
+    ctx.fillStyle = '#e6edf3';
+    ctx.beginPath();
+    ctx.arc(xC(step), yC(offers[step]), 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawMarker(stepIdx, val, color, label, dy) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(xC(stepIdx), yC(val), 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0d1117';
+    ctx.font = 'bold 9px "IBM Plex Sans", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, xC(stepIdx), yC(val) + (dy || 3));
+  }
+  if (studentSold) drawMarker(studentSoldStep, studentSoldPrice, '#f0883e', 'YOU');
+  if (phase === 'finished') {
+    drawMarker(maxStep, maxPrice, '#3fb950', 'MAX');
+    drawMarker(botSoldStep, botSoldPrice, '#58a6ff', 'MATH');
+    drawMarker(aiSoldStep, aiSoldPrice, '#d2a8ff', 'AI');
+  }
+
+  // x label
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '10px "IBM Plex Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('1번 호가', xC(0), H - 4);
+  ctx.fillText(N + '번 호가', xC(N - 1), H - 4);
+}
+
+function drawLearnChart() {
+  const c = document.getElementById('learnChart');
+  const ctx = c.getContext('2d');
+  const dpr = c._dpr || 1;
+  const W = c._cssW || c.width;
+  const H = c._cssH || c.height;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const padL = 38, padR = 12, padT = 12, padB = 22;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  ctx.strokeStyle = '#21262d';
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + plotH * (i / 4);
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(W - padR, y);
+    ctx.stroke();
+  }
+
+  const minY = 60, maxY = 100;
+  const yScale = (v) => padT + plotH - plotH * ((v - minY) / (maxY - minY));
+
+  // 수학 봇 89.4점 기준선
+  ctx.strokeStyle = 'rgba(88, 166, 255, 0.7)';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(padL, yScale(89.4));
+  ctx.lineTo(W - padR, yScale(89.4));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#58a6ff';
+  ctx.font = '10px "IBM Plex Mono", monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('수학 봇 89.4', padL + 4, yScale(89.4) - 4);
+
+  // 76.8 (무작위) 기준선
+  ctx.strokeStyle = 'rgba(139, 148, 158, 0.5)';
+  ctx.setLineDash([2, 4]);
+  ctx.beginPath();
+  ctx.moveTo(padL, yScale(76.8));
+  ctx.lineTo(W - padR, yScale(76.8));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#8b949e';
+  ctx.fillText('무작위 76.8', padL + 4, yScale(76.8) + 12);
+
+  // y labels
+  ctx.fillStyle = '#8b949e';
+  ctx.textAlign = 'right';
+  for (let v = 60; v <= 100; v += 10) {
+    ctx.fillText(v, padL - 4, yScale(v) + 3);
+  }
+
+  if (AI.learningCurve.length === 0) {
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '12px "IBM Plex Sans", "Noto Sans KR", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('학습 시작 버튼을 누르세요', W / 2, H / 2);
+    return;
+  }
+
+  const maxEp = AI.learningCurve[AI.learningCurve.length - 1].ep;
+  const xScale = (ep) => padL + plotW * (ep / Math.max(1, maxEp));
+
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '10px "IBM Plex Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('0', padL, H - 4);
+  ctx.fillText(String(maxEp), W - padR, H - 4);
+  ctx.fillText('학습 에피소드', padL + plotW / 2, H - 4);
+
+  ctx.strokeStyle = '#d2a8ff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < AI.learningCurve.length; i++) {
+    const p = AI.learningCurve[i];
+    const x = xScale(p.ep);
+    const y = yScale(Math.max(minY, Math.min(maxY, p.avg)));
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  const last = AI.learningCurve[AI.learningCurve.length - 1];
+  ctx.fillStyle = '#d2a8ff';
+  ctx.beginPath();
+  ctx.arc(xScale(last.ep), yScale(Math.max(minY, Math.min(maxY, last.avg))), 4, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function updateStats() {
+  if (history.length === 0) return;
+  const youAvg = history.reduce((s, h) => s + h.youScore, 0) / history.length;
+  const botAvg = history.reduce((s, h) => s + h.botScore, 0) / history.length;
+  const aiAvg = history.reduce((s, h) => s + h.aiScore, 0) / history.length;
+
+  document.getElementById('youAvg').textContent = youAvg.toFixed(1);
+  document.getElementById('botAvg').textContent = botAvg.toFixed(1);
+  document.getElementById('aiAvg').textContent = aiAvg.toFixed(1);
+  document.getElementById('youDetail').textContent = `${history.length}판`;
+  document.getElementById('botDetail').textContent = `${history.length}판`;
+  document.getElementById('aiDetail').textContent = `${history.length}판` + (AI.trained ? '' : ' (학습 전)');
+
+  document.getElementById('youBar').style.width = youAvg + '%';
+  document.getElementById('botBar').style.width = botAvg + '%';
+  document.getElementById('aiBar').style.width = aiAvg + '%';
+  document.getElementById('youBarVal').textContent = youAvg.toFixed(1);
+  document.getElementById('botBarVal').textContent = botAvg.toFixed(1);
+  document.getElementById('aiBarVal').textContent = aiAvg.toFixed(1);
+}
+
+// ============== Events ==============
+document.getElementById('startBtn').addEventListener('click', () => {
+  if (phase === 'idle' || phase === 'finished') startRound();
+});
+document.getElementById('sellBtn').addEventListener('click', sellNow);
+document.getElementById('skipBtn').addEventListener('click', skipNow);
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (history.length > 0 && !confirm('통계를 초기화할까요?')) return;
+  history = [];
+  ['you','bot','ai'].forEach(k => {
+    document.getElementById(k+'Avg').textContent = '—';
+    document.getElementById(k+'Detail').textContent = '0판';
+    document.getElementById(k+'Bar').style.width = '0';
+    document.getElementById(k+'BarVal').textContent = '—';
+  });
+});
+document.querySelectorAll('[data-speed]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-speed]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    tickMs = parseInt(btn.dataset.speed);
+    if (phase === 'playing') {
+      clearInterval(timer);
+      timer = setInterval(tick, tickMs);
+    }
+  });
+});
+
+document.getElementById('trainBtn').addEventListener('click', () => trainAI(2000));
+document.getElementById('trainMoreBtn').addEventListener('click', () => trainAI(2000));
+
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (phase === 'playing' && !studentSold) sellNow();
+    else if (phase === 'idle' || phase === 'finished') startRound();
+  }
+});
+
+window.addEventListener('load', () => {
+  fixCanvas('chart', CHART_CSS_H);
+  fixCanvas('learnChart', LEARN_CSS_H);
+  drawChart();
+  drawLearnChart();
+});
+window.addEventListener('resize', () => {
+  fixCanvas('chart', CHART_CSS_H);
+  fixCanvas('learnChart', LEARN_CSS_H);
+  drawChart();
+  drawLearnChart();
+});
+</script>
+
+<!-- Firebase Realtime DB로 학생 점수 자동 송신 (성신여대 강의용) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyA37yejwEmS357EpjfHIaBFGxr1EG5DLLg",
+    authDomain: "sungshin-timing.firebaseapp.com",
+    databaseURL: "https://sungshin-timing-default-rtdb.firebaseio.com",
+    projectId: "sungshin-timing",
+    storageBucket: "sungshin-timing.firebasestorage.app",
+    messagingSenderId: "979579687379",
+    appId: "1:979579687379:web:2dec0feade7d43dfd31f26"
+  };
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    window.__sendScore = function (score) {
+      const s = Number(score);
+      if (!Number.isFinite(s) || s < 0 || s > 100) return;
+      push(ref(db, 'scores'), { score: s, ts: Date.now() }).catch(() => {});
+    };
+  } catch (e) {
+    // 네트워크/SDK 로드 실패해도 게임 자체는 그대로 동작
+    window.__sendScore = function () {};
+  }
+</script>
+
+<script data-goatcounter="https://takwon-sungshin.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

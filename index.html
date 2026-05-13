@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>핀테크 강연 · 실습 도구</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2129;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --accent: #58a6ff;
+  --accent2: #3fb950;
+  --accent3: #f0883e;
+  --danger: #ff6b6b;
+  --radius: 10px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', 'Noto Sans KR', sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+  min-height: 100vh;
+  padding: 24px;
+}
+.container { max-width: 1100px; margin: 0 auto; }
+
+header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.title {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+.title span { color: var(--accent); }
+.subtitle {
+  font-size: 16px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.dept {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--accent2);
+  margin-top: 6px;
+}
+
+.lead {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin-bottom: 32px;
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.lead b { color: var(--text); font-weight: 500; }
+.lead .pull {
+  display: inline-block;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+@media (max-width: 1000px) { .grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 700px) {
+  .grid { grid-template-columns: 1fr; }
+  .title { font-size: 28px; }
+  body { padding: 16px; }
+}
+
+.tool-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+.tool-card h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.tool-card .tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+.tool-card .tag.t1 { color: var(--accent3); }
+.tool-card .tag.t2 { color: var(--accent2); }
+.tool-card .desc {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+.tool-card .desc b { color: var(--text); font-weight: 500; }
+.qr-wrap {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 0 auto 16px;
+  width: fit-content;
+  max-width: 100%;
+}
+.qr-wrap img, .qr-wrap canvas, .qr-wrap svg {
+  display: block;
+  width: 180px;
+  height: 180px;
+}
+.url-row {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  word-break: break-all;
+  text-align: center;
+  margin-bottom: 14px;
+}
+.url-row .label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  color: var(--accent);
+}
+.tool-card a.btn {
+  text-decoration: none;
+  text-align: center;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 12px;
+  border-radius: 8px;
+  transition: background 0.15s;
+  display: block;
+}
+.tool-card a.btn:hover { background: #79b8ff; }
+.tool-card a.btn.alt { background: var(--accent3); }
+.tool-card a.btn.alt:hover { background: #ff9c4d; }
+.tool-card a.btn.purple { background: #d2a8ff; }
+.tool-card a.btn.purple:hover { background: #e2c0ff; }
+.tool-card.featured {
+  border: 1px solid #d2a8ff;
+  box-shadow: 0 2px 16px rgba(210, 168, 255, 0.15);
+}
+.tool-card.featured .tag.tf { color: #d2a8ff; }
+.featured-banner {
+  background: linear-gradient(90deg, rgba(210,168,255,0.2), transparent);
+  border-left: 3px solid #d2a8ff;
+  padding: 6px 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #d2a8ff;
+  margin: -22px -22px 14px -22px;
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+}
+
+.config-panel {
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 28px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.config-panel label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  margin-bottom: 4px;
+  margin-top: 8px;
+}
+.config-panel input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+}
+.config-panel input:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+.config-panel .hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+.footer-credit {
+  margin-top: 32px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.footer-credit a { color: var(--accent); text-decoration: none; }
+
+.outline-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 24px;
+}
+.outline-panel h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent3);
+}
+.outline-table {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 8px 16px;
+  font-size: 13px;
+}
+.outline-table .time {
+  font-family: 'IBM Plex Mono', monospace;
+  color: var(--accent);
+  font-weight: 500;
+}
+.outline-table .desc { color: var(--text-dim); }
+.outline-table .desc b { color: var(--text); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="title">핀테크의 두뇌 — <span>수학으로 미래를 그리다</span></div>
+    <div class="subtitle">자유전공 신입생 강연 · 실습 도구</div>
+    <div class="dept">성신여자대학교 수리통계데이터사이언스학부 · 핀테크 트랙</div>
+  </header>
+
+  <div class="lead">
+    AI 시대에 <b>왜 수학이 더 중요해졌는지</b>, 30초 게임 하나로 직접 느껴보세요.
+    여러분이 게임을 하는 동안, 같은 문제를 푸는 두 명의 상대가 있어요 — 1960년대 수학자가 만든 <b>37% 규칙</b>, 그리고 게임의 룰을 모른 채 학습으로 답을 찾아가는 <b>강화학습 AI</b>.
+    <span class="pull">아래 QR을 폰으로 찍어주세요.</span>
+  </div>
+
+  <div class="config-panel" id="configPanel">
+    <label for="baseUrlInput">배포 URL (강의 전 강사가 채워주세요)</label>
+    <input type="text" id="baseUrlInput" placeholder="https://&lt;username&gt;.github.io/&lt;repo&gt;/">
+    <div class="hint">설정한 URL 기준으로 두 도구의 QR이 자동 생성됩니다. 로컬에서 열어도 OK — 그땐 같은 페이지 안의 상대 경로로 열려요.</div>
+  </div>
+
+  <div class="grid">
+
+    <div class="tool-card featured">
+      <div class="featured-banner">★ 강의 메인 데모</div>
+      <div class="tag tf">실습 · 직감 vs 수학 vs AI</div>
+      <h2>매도 타이밍 + AI 학습</h2>
+      <div class="desc">
+        30명이 한 명씩 가격을 부르고, <b>한 명에게만 팔 수 있어요</b>.
+        학생 / 수학 봇(37% 규칙) / AI 봇(Q-learning)이 같이 경쟁합니다.
+        <b>AI는 학습 전 76점에서 시작해서 89점까지 수렴</b>하는 곡선을 실시간으로 보여줘요.
+      </div>
+      <div class="qr-wrap"><div id="qr0"></div></div>
+      <div class="url-row"><span class="label">URL</span><span id="url0">—</span></div>
+      <a class="btn purple" id="link0" href="optimal-stopping-ai.html">데스크탑에서 열기 →</a>
+    </div>
+
+    <div class="tool-card">
+      <div class="tag t1">보조 · OPTIMAL STOPPING (v1)</div>
+      <h2>매도 타이밍 게임</h2>
+      <div class="desc">
+        AI 없이 학생 vs 수학 봇만 비교하는 v1 버전.
+        가격이 1초마다 흐르고 딱 한 번만 매도.
+        37% 규칙(Dynkin, 1963).
+      </div>
+      <div class="qr-wrap"><div id="qr1"></div></div>
+      <div class="url-row"><span class="label">URL</span><span id="url1">—</span></div>
+      <a class="btn" id="link1" href="optimal-stopping-game.html">데스크탑에서 열기 →</a>
+    </div>
+
+    <div class="tool-card">
+      <div class="tag t2">보조 · MONTE CARLO</div>
+      <h2>주가 시뮬레이터</h2>
+      <div class="desc">
+        과거 1년에서 μ, σ 측정 → <b>1000개의 미래</b>를 동시에 그립니다.
+        GBM vs Merton Jump, 2종목 비교, 수동 파라미터 조정.
+      </div>
+      <div class="qr-wrap"><div id="qr2"></div></div>
+      <div class="url-row"><span class="label">URL</span><span id="url2">—</span></div>
+      <a class="btn alt" id="link2" href="price-monte-carlo.html">데스크탑에서 열기 →</a>
+    </div>
+
+  </div>
+
+  <div class="outline-panel">
+    <h3>30분 강의 구성</h3>
+    <div class="outline-table">
+      <div class="time">0–3분</div>   <div class="desc">Hook. "AI 시대에 왜 수학이 더 중요해졌는지, 30초 게임 하나로 보여드릴게요."</div>
+      <div class="time">3–5분</div>   <div class="desc">게임 룰 설명 + 1판 시연 (교수가 직접 플레이).</div>
+      <div class="time">5–13분</div>  <div class="desc">학생 5판 플레이. 매판 끝마다 봇 점수와 비교.</div>
+      <div class="time">13–18분</div> <div class="desc">AI 봇 학습 시연 — 학습 곡선이 76 → 89로 수렴. "AI가 도달한 답 = 수학자가 증명한 답."</div>
+      <div class="time">18–22분</div> <div class="desc">실제 응용 — 미국식 옵션 가격결정, 알고리즘 매매 실행, 보험금 지급 시점.</div>
+      <div class="time">22–28분</div> <div class="desc">학과 셀링 — 진로 3개(퀀트·보험계리·핀테크 DS), 학부 구조적 강점, RL 멘토링 사례.</div>
+      <div class="time">28–30분</div> <div class="desc">콜투액션 — "수강신청 전에 연구실로 와요. 커피 사드릴게요."</div>
+    </div>
+  </div>
+
+  <div class="footer-credit">
+    성신여자대학교 수리통계데이터사이언스학부 · 핀테크 트랙 데모
+    <br>
+    <a href="dashboard.html" style="color: var(--text-dim); font-size: 11px; text-decoration: underline; margin-top: 8px; display: inline-block;">강의자용: 실시간 점수 대시보드 →</a>
+  </div>
+
+</div>
+
+<script>
+// 강의 전 URL을 localStorage에 저장해서 다음 방문 때도 유지
+const STORAGE_KEY = 'fintech-lecture-base-url';
+const TOOLS = [
+  { path: 'optimal-stopping-ai.html',   qrId: 'qr0', urlId: 'url0', linkId: 'link0' },
+  { path: 'optimal-stopping-game.html', qrId: 'qr1', urlId: 'url1', linkId: 'link1' },
+  { path: 'price-monte-carlo.html',     qrId: 'qr2', urlId: 'url2', linkId: 'link2' },
+];
+
+function autoBase() {
+  // 현재 페이지의 디렉토리 (https://...../index.html → https://....../ )
+  const u = new URL(window.location.href);
+  const base = u.origin + u.pathname.replace(/index\.html?$/i, '').replace(/\/?$/, '/');
+  return base;
+}
+
+function renderQR(elId, url) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  if (typeof qrcode === 'undefined') {
+    el.textContent = 'QR 라이브러리 로드 실패';
+    return;
+  }
+  // typeNumber 0 → auto, errorCorrectionLevel 'M'
+  const qr = qrcode(0, 'M');
+  qr.addData(url);
+  qr.make();
+  el.innerHTML = qr.createSvgTag({ scalable: true, margin: 0 });
+  const svg = el.querySelector('svg');
+  if (svg) {
+    svg.style.width = '180px';
+    svg.style.height = '180px';
+  }
+}
+
+function updateAll() {
+  const input = document.getElementById('baseUrlInput');
+  let base = (input.value || '').trim();
+  if (!base) base = autoBase();
+  if (!base.endsWith('/')) base += '/';
+
+  for (const t of TOOLS) {
+    const full = base + t.path;
+    document.getElementById(t.urlId).textContent = full;
+    document.getElementById(t.linkId).href = t.path; // 데스크탑 링크는 상대경로 유지
+    renderQR(t.qrId, full);
+  }
+}
+
+document.getElementById('baseUrlInput').addEventListener('input', (e) => {
+  localStorage.setItem(STORAGE_KEY, e.target.value);
+  updateAll();
+});
+
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) document.getElementById('baseUrlInput').value = saved;
+  updateAll();
+});
+</script>
+
+<script data-goatcounter="https://takwon-sungshin.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
